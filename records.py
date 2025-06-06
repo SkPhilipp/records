@@ -5,11 +5,11 @@ Provides data integrity, consistency, and change tracking with an intuitive inte
 """
 
 import json
-import sqlite3
-from typing import Any, Dict, List, Optional, Type, Union
-from dataclasses import dataclass, fields, is_dataclass
+from typing import Any, Dict, List, Optional, Type
 from pathlib import Path
 import atexit
+from record_serializer import RecordSerializer
+from records_tracker import RecordsTracker
 
 
 class RecordTypeStructure:
@@ -23,21 +23,22 @@ class RecordTypeStructure:
     def add_attribute(self, name: str, value: Any) -> bool:
         """Add a new attribute to the structure. Returns True if it's a new attribute."""
         attr_type = type(value)
-        if name not in self.attributes:
-            self.attributes[name] = attr_type
-            self.structure_changes.append({
-                'action': 'add',
-                'collection': self.collection_name,
-                'attribute': name,
-                'type': attr_type.__name__
-            })
-            return True
-        return False
-    
+        if name in self.attributes:
+            return
+        self.attributes[name] = attr_type
+        self.structure_changes.append({
+            'action': 'add',
+            'collection': self.collection_name,
+            'attribute': name,
+            'type': attr_type.__name__
+        })
+
     def enforce_type(self, name: str, value: Any) -> None:
         """Enforce type for an existing attribute. Raises TypeError if invalid."""
         if value is None:
             return  # None is always allowed
+        
+        RecordSerializer.validate_value(value, name, self.collection_name)
         
         if name in self.attributes:
             expected_type = self.attributes[name]
@@ -72,7 +73,7 @@ class Record:
         records_manager._add_record(collection_name, self)
         
         # Track content change
-        records_manager._track_content_change('add', collection_name, self._id, kwargs)
+        records_manager._tracker.track_change('add', collection_name, self._id, kwargs)
     
     def __setattr__(self, name: str, value: Any):
         # Handle internal attributes normally
@@ -94,7 +95,7 @@ class Record:
         
         # Track content change
         if old_value != value:
-            self._records_manager._track_content_change(
+            self._records_manager._tracker.track_change(
                 'update', self._collection_name, self._id, {name: {'old': old_value, 'new': value}}
             )
     
@@ -143,17 +144,32 @@ class Collection:
 class Records:
     """Main interface for managing structured data collections."""
     
-    def __init__(self):
+    def __init__(self, path: Path = Path("records.json")):
         self._collections: Dict[str, List[Record]] = {}
         self._next_ids: Dict[str, int] = {}
         self._structures: Dict[str, RecordTypeStructure] = {}
-        self._content_changes: List[Dict[str, Any]] = []
-        self._db_path = Path("records.db")
+        self._tracker = RecordsTracker()
+        self._json_path = path
         
         # Register cleanup on exit
         atexit.register(self._on_exit)
+        
+        # Load existing data if available
+        loaded_collections = RecordSerializer.load_and_deserialize(self._json_path, Record, self)
+        if loaded_collections:
+            self._collections = loaded_collections
+            # Update next IDs based on loaded data
+            for collection_name, records_list in self._collections.items():
+                if records_list:
+                    max_id = max(record._id for record in records_list)
+                    self._next_ids[collection_name] = max_id + 1
+            
+            # Clear out any changes that were tracked during loading
+            self._tracker.clear_changes()
+            for structure in self._structures.values():
+                structure.structure_changes.clear()
     
-    def __getattr__(self, name: str) -> Union[Collection, Any]:
+    def __getattr__(self, name: str):
         """Dynamic collection access and creation."""
         if name.startswith('_'):
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
@@ -194,7 +210,7 @@ class Records:
         for i, record in enumerate(collection):
             if record._id == record_id:
                 deleted_record = collection.pop(i)
-                self._track_content_change('delete', collection_name, record_id, deleted_record.to_dict())
+                self._tracker.track_change('delete', collection_name, record_id, deleted_record.to_dict())
                 return True
         return False
     
@@ -204,14 +220,7 @@ class Records:
             self._structures[collection_name] = RecordTypeStructure(collection_name)
         return self._structures[collection_name]
     
-    def _track_content_change(self, action: str, collection_name: str, record_id: int, data: Any):
-        """Track content changes."""
-        self._content_changes.append({
-            'action': action,
-            'collection': collection_name,
-            'record_id': record_id,
-            'data': data
-        })
+
     
     def structure(self) -> Dict[str, Dict[str, str]]:
         """Return the current data structure."""
@@ -234,149 +243,19 @@ class Records:
             report += f"+ {change['collection']}.{change['attribute']}: {change['type']}\n"
         return report
     
-    def _generate_content_report(self) -> str:
-        """Generate content change report showing actual entities created, modified, and deleted."""
-        if not self._content_changes:
-            return "No content changes."
-        
-        # Track record states and data
-        record_tracking = {}  # (collection, record_id) -> {'state': str, 'data': dict}
-        
-        for change in self._content_changes:
-            key = (change['collection'], change['record_id'])
-            
-            if change['action'] == 'add':
-                record_tracking[key] = {
-                    'state': 'created',
-                    'data': change['data'],
-                    'collection': change['collection']
-                }
-            elif change['action'] == 'update':
-                if key in record_tracking:
-                    if record_tracking[key]['state'] == 'created':
-                        # Created and modified = still just created
-                        continue
-                    elif record_tracking[key]['state'] == 'modified':
-                        # Already modified, keep as modified
-                        continue
-                else:
-                    # First time seeing this record, must be a modification of existing
-                    record_tracking[key] = {
-                        'state': 'modified',
-                        'data': change['data'],
-                        'collection': change['collection']
-                    }
-            elif change['action'] == 'delete':
-                if key in record_tracking and record_tracking[key]['state'] == 'created':
-                    # Created then deleted = no net change, remove from tracking
-                    del record_tracking[key]
-                else:
-                    # Was existing (or modified) and deleted
-                    record_tracking[key] = {
-                        'state': 'deleted',
-                        'data': change['data'],
-                        'collection': change['collection']
-                    }
-        
-        if not record_tracking:
-            return "No net content changes."
-        
-        # Group by state
-        created = [(k, v) for k, v in record_tracking.items() if v['state'] == 'created']
-        modified = [(k, v) for k, v in record_tracking.items() if v['state'] == 'modified']
-        deleted = [(k, v) for k, v in record_tracking.items() if v['state'] == 'deleted']
-        
-        report = "Content change report:\n"
-        
-        # Show created records
-        for (collection, record_id), info in created:
-            # Show the final state of created records
-            current_record = None
-            for record in self._collections.get(collection, []):
-                if record._id == record_id:
-                    current_record = record.to_dict()
-                    break
-            if current_record:
-                report += f"+ {collection}({', '.join(f'{k}={v}' for k, v in current_record.items() if k != 'id')})\n"
-        
-        # Show modified records
-        for (collection, record_id), info in modified:
-            current_record = None
-            for record in self._collections.get(collection, []):
-                if record._id == record_id:
-                    current_record = record.to_dict()
-                    break
-            if current_record:
-                report += f"~ {collection}(id={record_id}, {', '.join(f'{k}={v}' for k, v in current_record.items() if k != 'id')})\n"
-        
-        # Show deleted records
-        for (collection, record_id), info in deleted:
-            report += f"- {collection}(id={record_id})\n"
-        
-        return report
-    
-    def _persist_data(self):
-        """Persist data to database."""
-        conn = sqlite3.connect(self._db_path)
-        try:
-            # Create tables for each collection
-            for collection_name, records_list in self._collections.items():
-                if records_list:
-                    # Get all unique columns from all records
-                    all_columns = set(['id'])
-                    for record in records_list:
-                        for attr_name in record.__dict__:
-                            if not attr_name.startswith('_'):
-                                all_columns.add(attr_name)
-                    
-                    # Drop and recreate table to handle schema changes
-                    conn.execute(f"DROP TABLE IF EXISTS {collection_name}")
-                    
-                    columns_def = ['id INTEGER PRIMARY KEY']
-                    for col in sorted(all_columns):
-                        if col != 'id':
-                            columns_def.append(f"{col} TEXT")
-                    
-                    create_table_sql = f"CREATE TABLE {collection_name} ({', '.join(columns_def)})"
-                    conn.execute(create_table_sql)
-                    
-                    # Insert records
-                    for record in records_list:
-                        record_dict = record.to_dict()
-                        # Ensure all columns are present (fill missing with None)
-                        full_record = {col: record_dict.get(col) for col in all_columns}
-                        
-                        placeholders = ', '.join(['?' for _ in full_record])
-                        columns_str = ', '.join(full_record.keys())
-                        values = list(full_record.values())
-                        
-                        insert_sql = f"INSERT INTO {collection_name} ({columns_str}) VALUES ({placeholders})"
-                        conn.execute(insert_sql, values)
-            
-            conn.commit()
-        finally:
-            conn.close()
-    
+
     def _on_exit(self):
         """Called on program exit to persist data and generate reports."""
-        self._persist_data()
+        try:
+            RecordSerializer.serialize_and_persist(self._collections, self._json_path)
+        except (FileNotFoundError, OSError):
+            # Temp directory may have been cleaned up already, skip persistence
+            pass
         
         print(self._generate_structure_report())
-        print(self._generate_content_report())
+        print(self._tracker.generate_report(self._collections))
         print("To undo all of the above changes, invoke `records.undo()` once.")
     
     def undo(self):
         """Undo all changes (placeholder for now)."""
         print("Undo functionality not yet implemented.")
-
-
-# Create the main records instance
-records = Records()
-
-
-# Helper function to create records dynamically
-def __getattr__(name: str):
-    """Allow module-level access to records collections."""
-    if name == 'records':
-        return records
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
