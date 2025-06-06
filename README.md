@@ -33,47 +33,60 @@ The concept of Records is;
 3. Infer and constrain the data's structure as it is worked with.
 4. Track changes, allowing for step-by-step reviews and re-do's.
 
-## `records`
-
-`records` is the main interface through which data and their structure is managed.
+## Usage
 
 ```python
-from dataclasses import dataclass
-from records import records
-import google_maps
+from src.records import Records
+records = Records()  # Uses "records.json" by default
 
+# Create a new record
 loc = records.location(lat=12.345, long=67.890)
-loc.address = google_maps.lookup(loc.lat, loc.long)
+loc.address = "123 Main St, Amsterdam, Netherlands"
 
-records.structure()
+# Get the structure of the data
+records.structure
 # {
 #	"location": {
-#       "id": int,
-#		"lat": float,
-#		"long": float,
-#		"address": Address,
+#       "_id": "int",
+#		"lat": "float", 
+#		"long": "float",
+#		"address": "str",
 #	}
 # }
 
+# Query data
 records.location.all()
 # [
-#	{"id": 0, "lat": 12.345, "long": 67.890, "address": {...}}
+#	{"_id": 0, "lat": 12.345, "long": 67.890, "address": "123 Main St, Amsterdam, Netherlands"}
 # ]
 
-records.location.delete(id=0)
+# Filter and manipulate
+locations = records.location.all()
+locations_on_lat_long = [loc for loc in locations if loc['lat'] == 12.345 and loc['long'] == 67.890]    
+
+# Delete records
+records.location.delete(0)
 ```
 
-On program end, the data is persisted to a database and a change report is generated.
+On program end, the data is persisted to JSON and a change report is generated.
 
 ```log
 Structure change report:
++ location._id: int
 + location.lat: float
-+ location.long: float
-+ location.address: {street: str, city: str, state: str, zip: str}
++ location.long: float  
++ location.address: str
 
-Content change report summary:
-+ location(lat=12.345, long=67.890, address: Address(street="123 Main St", ...))
-+ (10 locations omitted)
+Content change report:
++ location(lat=12.345, long=67.89, address=123 Main St, Amsterdam, Netherlands)
 
 To undo all of the above changes, invoke `records.undo()` once.
+```
+
+## Development
+
+### Tests
+
+```bash
+./run_tests.sh
 ```
