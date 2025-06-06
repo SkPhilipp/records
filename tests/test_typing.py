@@ -4,7 +4,7 @@ Test script to demonstrate type enforcement in Records.
 
 import tempfile
 from pathlib import Path
-from records import Records
+from src.records import Records
 
 def test_type_enforcement():
     print("Testing type enforcement...")

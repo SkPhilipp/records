@@ -2,7 +2,7 @@
 Test RecordsTracker functionality.
 """
 
-from records_tracker import RecordsTracker
+from src.records_tracker import RecordsTracker
 
 
 class MockRecord:

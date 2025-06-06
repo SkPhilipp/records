@@ -5,8 +5,8 @@ Test the complete save and load cycle for Records persistence.
 import json
 import tempfile
 from pathlib import Path
-from records import Records, Record
-from record_serializer import RecordSerializer
+from src.records import Records, Record
+from src.record_serializer import RecordSerializer
 
 
 def test_save_load_cycle():

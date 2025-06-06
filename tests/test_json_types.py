@@ -5,7 +5,7 @@ Test JSON-native type enforcement.
 import tempfile
 from pathlib import Path
 from datetime import datetime
-from records import Records
+from src.records import Records
 
 
 class CustomObject:

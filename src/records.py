@@ -8,8 +8,8 @@ import json
 from typing import Any, Dict, List, Optional, Type
 from pathlib import Path
 import atexit
-from record_serializer import RecordSerializer
-from records_tracker import RecordsTracker
+from .record_serializer import RecordSerializer
+from .records_tracker import RecordsTracker
 
 
 class RecordTypeStructure:

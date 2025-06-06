@@ -4,7 +4,7 @@ Demo test showing Records functionality with locations and gyms.
 
 import tempfile
 from pathlib import Path
-from records import Records
+from src.records import Records
 
 def test_records_demo():
     """Test basic Records functionality with the original demo scenario."""
