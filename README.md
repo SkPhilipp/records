@@ -24,7 +24,7 @@ Structure changes:
 Content changes:
 + location(lat=12.345, long=67.89)
 
-To undo all of the above changes, invoke `records.undo()` once.
+To undo ALL of the above changes, invoke `records.undo()` once.
 ```
 
 This should allow an AI agent to decide whether its changes were successful, and if not, to re-do them.
