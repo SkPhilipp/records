@@ -15,15 +15,13 @@ Recently I prompted an AI with access to Google Maps and a browser for the follo
 These tasks require an agent to maintain a body of data which is manipulated at each step in the process.
 At each step of this process we are exposed to risks. I wondered about how I could get the following guarantees;
 
-| Guarantee          | Description                                                                                   |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| Data integrity     | Can we guarantee data being output by an agent is exactly what was yielded by external tools? |
-| Data consistency   | Can we guarantee data follows a consistent format?                                            |
-| Context limits     | Can we avoid having to feed large amounts of data into the agent's context window?            |
-| Context safety     | Can we avoid having to feed unsafe data into the agent's context window?                      |
-| Process repetition | Can we re-do most of the process without having to explicitly re-prompt the agent?            |
-| Process mistakes   | Can we undo a mistake when it is detected later on in the process?                            |
-| Process review     | Can we validate that each step of the process does what it is supposed to do?                 |
+- Can we guarantee data being output by an agent is exactly what was yielded by external tools?
+- Can we guarantee data follows a consistent format?
+- Can we avoid having to feed large amounts of data into the agent's context window?
+- Can we avoid having to feed unsafe data into the agent's context window?
+- Can we re-do most of the process without having to explicitly re-prompt the agent?
+- Can we undo a mistake when it is detected later on in the process?
+- Can we validate that each step of the process does what it is supposed to do?
 
 ## Concept
 
