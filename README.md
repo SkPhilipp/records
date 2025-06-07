@@ -44,7 +44,7 @@ records.location.all()
 
 Recently I prompted an AI with access to Google Maps and a browser for the following;
 
-1. "Find me boxing gyms near Amsterdam"
+1. "Find me boxing gyms near Amsterdam Lelylaan"
 2. "What's the time to reach them with public transport from Amsterdam Lelylaan"
 3. "Remove those that are more than 30 minutes away"
 4. "Find out which of them offer heavy bag training in the evening"
