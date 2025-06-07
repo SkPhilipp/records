@@ -87,7 +87,7 @@ Note:
 ### Updates
 
 ```python
-loc.address = "123 Main St, Amsterdam, Netherlands"
+loc.address = "1 Main St, Amsterdam, Netherlands"
 ```
 
 The same rules apply as for inserts.
@@ -97,7 +97,7 @@ The same rules apply as for inserts.
 ```python
 records.location.all()
 # [
-#	{"_id": 0, "lat": 12.345, "long": 67.890, "address": "123 Main St, Amsterdam, Netherlands"}
+#	{"_id": 1234, "lat": 12.345, "long": 67.890, "address": "1 Main St, Amsterdam, Netherlands"}
 # ]
 ```
 
@@ -107,7 +107,7 @@ Note:
 ### Deletes
 
 ```python
-records.location.delete(0)
+records.location.delete(1234)
 ```
 
 ### Structure

@@ -263,3 +263,4 @@ class Records:
             print("Undo successful: Most recent changes have been reverted.")
         else:
             print("Nothing to undo: No save files found.")
+        return success
