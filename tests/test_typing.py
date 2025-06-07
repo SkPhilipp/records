@@ -59,4 +59,4 @@ def test_type_enforcement():
             print(f"✗ Unexpected error: {e}")
 
 if __name__ == "__main__":
-    test_type_enforcement() 
+    test_type_enforcement()

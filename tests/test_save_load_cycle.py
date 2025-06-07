@@ -16,6 +16,7 @@ def test_save_load_cycle():
     # Use temporary directory for test files
     with tempfile.TemporaryDirectory() as temp_dir:
         test_file = Path(temp_dir) / "test_records.json"
+        records_dir = test_file.parent / ".records"
         
         # Create first Records instance and add some data
         records1 = Records(test_file)
@@ -33,9 +34,14 @@ def test_save_load_cycle():
         # Save data manually
         RecordSerializer.serialize_and_persist(records1._collections, records1._json_path)
         
-        # Verify file was created and has content
-        assert test_file.exists(), "Save file should exist"
-        with open(test_file, 'r') as f:
+        # Verify .records directory was created and has content
+        assert records_dir.exists(), ".records directory should exist"
+        json_files = list(records_dir.glob("*.json"))
+        assert len(json_files) > 0, "Should have at least one timestamped JSON file"
+        
+        # Check the content of the most recent file
+        most_recent_file = max(json_files, key=lambda x: x.name)
+        with open(most_recent_file, 'r') as f:
             saved_data = json.load(f)
         
         assert 'location' in saved_data, "Location collection should be saved"

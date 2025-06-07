@@ -75,4 +75,4 @@ def test_json_types():
 
 
 if __name__ == "__main__":
-    test_json_types() 
+    test_json_types()

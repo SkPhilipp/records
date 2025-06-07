@@ -3,7 +3,9 @@ RecordSerializer - Handles type validation and serialization for Records.
 """
 
 import json
-from typing import Any, Dict, List
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 
@@ -41,8 +43,39 @@ class RecordSerializer:
             )
     
     @staticmethod
-    def serialize_and_persist(collections: Dict[str, List['Record']], file_path: Path) -> None:
-        """Convert collections to serializable format and persist to file."""
+    def _ensure_records_dir(records_dir: Path) -> None:
+        """Ensure the .records directory exists."""
+        records_dir.mkdir(exist_ok=True)
+    
+    @staticmethod
+    def _get_timestamped_filename() -> str:
+        """Generate a timestamped filename."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # microseconds to milliseconds
+        return f"{timestamp}.json"
+    
+    @staticmethod
+    def _get_most_recent_file(records_dir: Path) -> Optional[Path]:
+        """Get the most recent records file from the .records directory."""
+        if not records_dir.exists():
+            return None
+        
+        json_files = list(records_dir.glob("*.json"))
+        if not json_files:
+            return None
+        
+        # Sort by filename (timestamp) in descending order
+        json_files.sort(key=lambda x: x.name, reverse=True)
+        return json_files[0]
+    
+    @staticmethod
+    def serialize_and_persist(collections: Dict[str, List['Record']], base_path: Path) -> None:
+        """Convert collections to serializable format and persist to timestamped file."""
+        records_dir = base_path.parent / ".records"
+        RecordSerializer._ensure_records_dir(records_dir)
+        
+        filename = RecordSerializer._get_timestamped_filename()
+        file_path = records_dir / filename
+        
         data = {}
         for collection_name, records_list in collections.items():
             data[collection_name] = [record.to_dict() for record in records_list]
@@ -51,12 +84,15 @@ class RecordSerializer:
             json.dump(data, f, indent=2)
     
     @staticmethod
-    def load_and_deserialize(file_path: Path, records_class, records_manager) -> Dict[str, List['Record']]:
-        """Load data from file and convert back to Record objects."""
-        if not file_path.exists():
+    def load_and_deserialize(base_path: Path, records_class, records_manager) -> Dict[str, List['Record']]:
+        """Load data from the most recent file and convert back to Record objects."""
+        records_dir = base_path.parent / ".records"
+        most_recent_file = RecordSerializer._get_most_recent_file(records_dir)
+        
+        if not most_recent_file:
             return {}
         
-        with open(file_path, 'r') as f:
+        with open(most_recent_file, 'r') as f:
             data = json.load(f)
         
         collections = {}
@@ -78,3 +114,18 @@ class RecordSerializer:
                 collections[collection_name].append(record)
         
         return collections
+    
+    @staticmethod
+    def undo(base_path: Path) -> bool:
+        """Remove the most recent records file to undo changes. Returns True if successful."""
+        records_dir = base_path.parent / ".records"
+        most_recent_file = RecordSerializer._get_most_recent_file(records_dir)
+        
+        if not most_recent_file:
+            return False
+        
+        try:
+            most_recent_file.unlink()
+            return True
+        except OSError:
+            return False

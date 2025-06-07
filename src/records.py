@@ -257,5 +257,9 @@ class Records:
         print("To undo all of the above changes, invoke `records.undo()` once.")
     
     def undo(self):
-        """Undo all changes (placeholder for now)."""
-        print("Undo functionality not yet implemented.")
+        """Undo all changes by removing the most recent save file."""
+        success = RecordSerializer.undo(self._json_path)
+        if success:
+            print("Undo successful: Most recent changes have been reverted.")
+        else:
+            print("Nothing to undo: No save files found.")
