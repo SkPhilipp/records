@@ -82,7 +82,7 @@ Note:
 - Using a record attribute for the first time, defines it.
 - Attribute values are limited to JSON-native types.
 - Attribute values may not be set to different types once set, other than `None`.
-- An attribute `_id` is always automatically assigned an integer value.
+- The attribute `_id` is always automatically added.
 
 ### Updates
 
