@@ -28,6 +28,25 @@ class RecordsTracker:
         """Get all tracked changes."""
         return self._content_changes.copy()
     
+    def _format_record_for_report(self, record_dict: Dict[str, Any], max_length: int = 150) -> str:
+        """Format a record for display in reports, truncating if too long."""
+        # Build the record representation
+        items = []
+        for k, v in record_dict.items():
+            if k != 'id':
+                items.append(f'{k}={v}')
+        
+        record_repr = ', '.join(items)
+        
+        # Check if it exceeds the limit
+        if len(record_repr) > max_length:
+            # Truncate and add warning
+            truncated = record_repr[:max_length - 50]
+            truncated_length = len(record_repr) - len(truncated)
+            return f"{truncated}... [truncated {truncated_length} characters]"
+        
+        return record_repr
+    
     def generate_report(self, collections: Dict[str, List['Record']]) -> str:
         """Generate content changes report showing actual entities created, modified, and deleted."""
         if not self._content_changes:
@@ -91,7 +110,8 @@ class RecordsTracker:
                     current_record = record.to_dict()
                     break
             if current_record:
-                report += f"+ {collection}({', '.join(f'{k}={v}' for k, v in current_record.items() if k != 'id')})\n"
+                formatted_record = self._format_record_for_report(current_record)
+                report += f"+ {collection}({formatted_record})\n"
         
         # Show modified records
         for (collection, record_id), info in modified:
@@ -101,7 +121,8 @@ class RecordsTracker:
                     current_record = record.to_dict()
                     break
             if current_record:
-                report += f"~ {collection}(id={record_id}, {', '.join(f'{k}={v}' for k, v in current_record.items() if k != 'id')})\n"
+                formatted_record = self._format_record_for_report(current_record)
+                report += f"~ {collection}(id={record_id}, {formatted_record})\n"
         
         # Show deleted records
         for (collection, record_id), info in deleted:
