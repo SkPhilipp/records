@@ -28,7 +28,7 @@ To undo all of the above changes, invoke `records.undo()` once.
 ```
 
 This should allow an AI agent to decide whether its changes were successful, and if not, to re-do them.
-Moreover, the data is loaded from JSON on program start, so it can be used again on a next step in a process.
+Moreover, the data is loaded (from a JSON) on program start, so it can be used again on a next step in a process.
 
 ```python
 from src.records import Records
