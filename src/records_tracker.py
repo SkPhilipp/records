@@ -29,7 +29,7 @@ class RecordsTracker:
         return self._content_changes.copy()
     
     def generate_report(self, collections: Dict[str, List['Record']]) -> str:
-        """Generate content change report showing actual entities created, modified, and deleted."""
+        """Generate content changes report showing actual entities created, modified, and deleted."""
         if not self._content_changes:
             return "No content changes."
         
@@ -80,7 +80,7 @@ class RecordsTracker:
         modified = [(k, v) for k, v in record_tracking.items() if v['state'] == 'modified']
         deleted = [(k, v) for k, v in record_tracking.items() if v['state'] == 'deleted']
         
-        report = "Content change report:\n"
+        report = "Content changes:\n"
         
         # Show created records
         for (collection, record_id), info in created:

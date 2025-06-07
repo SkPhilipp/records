@@ -230,7 +230,7 @@ class Records:
         return result
     
     def _generate_structure_report(self) -> str:
-        """Generate structure change report."""
+        """Generate structure changes report."""
         all_changes = []
         for structure in self._structures.values():
             all_changes.extend(structure.get_structure_changes())
@@ -238,7 +238,7 @@ class Records:
         if not all_changes:
             return "No structure changes."
         
-        report = "Structure change report:\n"
+        report = "Structure changes:\n"
         for change in all_changes:
             report += f"+ {change['collection']}.{change['attribute']}: {change['type']}\n"
         return report

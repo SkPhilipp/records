@@ -1,6 +1,33 @@
 # Records
 
-Records is a Python package for managing small amounts of data, tailored to be used by AI Agents in the scope of tasks.
+Records is a Python package intended to be consumed by AI Agents managing small amounts of data.
+
+It offers an extremely lenient interface to manage structured data, tracks changes and allows for step-by-step reviews. This makes it easy to codify tasks, keep data out of agents' context windows and re-do mistakes.
+
+## Usage
+
+```python
+from src.records import Records
+
+records = Records()
+records.location(lat=12.345, long=67.890)
+```
+
+On program end, the data is automatically persisted to JSON and a change report is generated like so:
+
+```text
+Structure changes:
++ location._id: int
++ location.lat: float
++ location.long: float
+
+Content changes:
++ location(lat=12.345, long=67.89)
+
+To undo all of the above changes, invoke `records.undo()` once.
+```
+
+This should allow an AI agent to decide whether its changes were successful, and if not, to re-do them.
 
 ## Why
 
@@ -23,26 +50,59 @@ At each step of this process we are exposed to risks. I wondered about how I cou
 - Can we undo a mistake when it is detected later on in the process?
 - Can we validate that each step of the process does what it is supposed to do?
 
-## Concept
+## API
 
-The concept of Records is;
-1. Codify tasks to keep data out of agents' context windows.
-2. Hand these agents an extremely lenient interface to manage structured data.
-3. Infer and constrain the data's structure as it is worked with.
-4. Track changes, allowing for step-by-step reviews and re-do's.
-
-## Usage
+### Initialization
 
 ```python
 from src.records import Records
-records = Records()  # Uses "records.json" by default
+# Uses "records.json" by default
+records = Records()
+```
 
-# Create a new record
+### Inserts
+
+```python
 loc = records.location(lat=12.345, long=67.890)
-loc.address = "123 Main St, Amsterdam, Netherlands"
+```
 
-# Get the structure of the data
-records.structure
+Note:
+- Using a record type for the first time, defines it.
+- Using a record attribute for the first time, defines it.
+- Attribute values are limited to JSON-native types.
+- Attribute values may not be set to different types once set, other than `None`.
+- An attribute `_id` is always automatically assigned an integer value.
+
+### Updates
+
+```python
+loc.address = "123 Main St, Amsterdam, Netherlands"
+```
+
+The same rules apply as for inserts.
+
+### Queries
+
+```python
+records.location.all()
+# [
+#	{"_id": 0, "lat": 12.345, "long": 67.890, "address": "123 Main St, Amsterdam, Netherlands"}
+# ]
+```
+
+Note:
+- All data is stored in memory, there is no query language.
+
+### Deletes
+
+```python
+records.location.delete(0)
+```
+
+### Structure
+
+```python
+records.structure()
 # {
 #	"location": {
 #       "_id": "int",
@@ -51,36 +111,7 @@ records.structure
 #		"address": "str",
 #	}
 # }
-
-# Query data
-records.location.all()
-# [
-#	{"_id": 0, "lat": 12.345, "long": 67.890, "address": "123 Main St, Amsterdam, Netherlands"}
-# ]
-
-# Filter and manipulate
-locations = records.location.all()
-locations_on_lat_long = [loc for loc in locations if loc['lat'] == 12.345 and loc['long'] == 67.890]    
-
-# Delete records
-records.location.delete(0)
 ```
-
-On program end, the data is persisted to JSON and a change report is generated.
-
-```log
-Structure change report:
-+ location._id: int
-+ location.lat: float
-+ location.long: float  
-+ location.address: str
-
-Content change report:
-+ location(lat=12.345, long=67.89, address=123 Main St, Amsterdam, Netherlands)
-
-To undo all of the above changes, invoke `records.undo()` once.
-```
-
 ## Development
 
 ### Tests
