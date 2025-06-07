@@ -254,7 +254,7 @@ class Records:
         
         print(self._generate_structure_report())
         print(self._tracker.generate_report(self._collections))
-        print("To undo all of the above changes, invoke `records.undo()` once.")
+        print("To undo ALL of the above changes, invoke `records.undo()` once.")
     
     def undo(self):
         """Undo all changes by removing the most recent save file."""
