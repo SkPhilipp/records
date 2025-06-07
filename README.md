@@ -102,7 +102,7 @@ records.location.all()
 ```
 
 Note:
-- All data is stored in memory, there is no query language.
+- There is no query language.
 
 ### Deletes
 
