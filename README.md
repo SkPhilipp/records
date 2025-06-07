@@ -51,7 +51,7 @@ Recently I prompted an AI with access to Google Maps and a browser for the follo
 5. "What's the top 3 with the best reviews"
 
 These tasks require an agent to maintain a body of data which is manipulated at each step in the process.
-At each step of this process we are exposed to risks. I wondered about how I could get the following guarantees;
+At each step, we are exposed to risks. I wondered about how I could get the following guarantees:
 
 - Can we guarantee data output by an agent is exactly what was yielded by external tools?
 - Can we guarantee data has a consistent format?
@@ -59,6 +59,7 @@ At each step of this process we are exposed to risks. I wondered about how I cou
 - Can we avoid having to feed unsafe data into the agent's context window?
 - Can we re-do most of the process without having to explicitly re-prompt the agent?
 - Can we undo a mistake when it is detected later on in the process?
+- Can we validate that each step of the process does what it is supposed to do?
 
 ## API
 
