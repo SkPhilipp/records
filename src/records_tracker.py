@@ -101,8 +101,12 @@ class RecordsTracker:
         
         report = "Content changes:\n"
         
-        # Show created records
-        for (collection, record_id), info in created:
+        # Show created records (limit to 5)
+        for i, ((collection, record_id), info) in enumerate(created):
+            if i >= 5:
+                remaining = len(created) - 5
+                report += f"... and {remaining} more created records\n"
+                break
             # Show the final state of created records
             current_record = None
             for record in collections.get(collection, []):
@@ -113,8 +117,12 @@ class RecordsTracker:
                 formatted_record = self._format_record_for_report(current_record)
                 report += f"+ {collection}({formatted_record})\n"
         
-        # Show modified records
-        for (collection, record_id), info in modified:
+        # Show modified records (limit to 5)
+        for i, ((collection, record_id), info) in enumerate(modified):
+            if i >= 5:
+                remaining = len(modified) - 5
+                report += f"... and {remaining} more modified records\n"
+                break
             current_record = None
             for record in collections.get(collection, []):
                 if record._id == record_id:
@@ -124,8 +132,12 @@ class RecordsTracker:
                 formatted_record = self._format_record_for_report(current_record)
                 report += f"~ {collection}(id={record_id}, {formatted_record})\n"
         
-        # Show deleted records
-        for (collection, record_id), info in deleted:
+        # Show deleted records (limit to 5)
+        for i, ((collection, record_id), info) in enumerate(deleted):
+            if i >= 5:
+                remaining = len(deleted) - 5
+                report += f"... and {remaining} more deleted records\n"
+                break
             report += f"- {collection}(id={record_id})\n"
         
         return report
